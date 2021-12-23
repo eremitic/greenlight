@@ -13,6 +13,7 @@ import (
 	// Import the pq driver so that it can register itself with the database/sql
 	// package. Note that we alias this import to the blank identifier, to stop the Go
 	// compiler complaining that the package isn't being used.
+	"github.com/eremitic/greenlight/internal/data"
 	_ "github.com/lib/pq"
 )
 
@@ -36,6 +37,7 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -44,12 +46,8 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
-	// Use the value of the GREENLIGHT_DB_DSN environment variable as the default value
-	// for our db-dsn command-line flag.
-	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("echo $GREENLIGHT_DB_DSN"), "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"), "PostgreSQL DSN")
 
-	// Read the connection pool settings from command-line flags into the config struct.
-	// Notice the default values that we're using?
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
@@ -63,7 +61,7 @@ func main() {
 	// application immediately.
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatal(cfg)
 	}
 
 	// Defer a call to db.Close() so that the connection pool is closed before the
@@ -77,6 +75,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
