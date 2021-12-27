@@ -4,8 +4,6 @@ import (
 	"context"      // New import
 	"database/sql" // New import
 	"flag"
-	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -88,22 +86,10 @@ func main() {
 		models: data.NewModels(db),
 	}
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+	err = app.serve()
+	if err != nil {
+		logger.PrintFatal(err, nil)
 	}
-
-	logger.PrintInfo("starting server", map[string]string{
-		"addr": srv.Addr,
-		"env":  cfg.env,
-	})
-	// Because the err variable is now already declared in the code above, we need
-	// to use the = operator here, instead of the := operator.
-	err = srv.ListenAndServe()
-	logger.PrintFatal(err, nil)
 }
 
 // The openDB() function returns a sql.DB connection pool.
