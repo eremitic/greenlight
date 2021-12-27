@@ -5,7 +5,6 @@ import (
 	"database/sql" // New import
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -14,6 +13,7 @@ import (
 	// package. Note that we alias this import to the blank identifier, to stop the Go
 	// compiler complaining that the package isn't being used.
 	"github.com/eremitic/greenlight/internal/data"
+	"github.com/eremitic/greenlight/internal/jsonlog"
 	_ "github.com/lib/pq"
 )
 
@@ -36,7 +36,7 @@ type config struct {
 
 type application struct {
 	config config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models data.Models
 }
 
@@ -54,23 +54,22 @@ func main() {
 
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-
+	// Initialize a new jsonlog.Logger which writes any messages *at or above* the INFO
+	// severity level to the standard out stream.
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 	// Call the openDB() helper function (see below) to create the connection pool,
 	// passing in the config struct. If this returns an error, we log it and exit the
 	// application immediately.
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(cfg)
+		logger.PrintFatal(err, nil)
 	}
 
 	// Defer a call to db.Close() so that the connection pool is closed before the
 	// main() function exits.
 	defer db.Close()
 
-	// Also log a message to say that the connection pool has been successfully
-	// established.
-	logger.Printf("database connection pool established")
+	logger.PrintInfo("database connection pool established", nil)
 
 	app := &application{
 		config: cfg,
@@ -86,11 +85,14 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	logger.Printf("starting %s server on %s", cfg.env, srv.Addr)
+	logger.PrintInfo("starting server", map[string]string{
+		"addr": srv.Addr,
+		"env":  cfg.env,
+	})
 	// Because the err variable is now already declared in the code above, we need
 	// to use the = operator here, instead of the := operator.
 	err = srv.ListenAndServe()
-	logger.Fatal(err)
+	logger.PrintFatal(err, nil)
 }
 
 // The openDB() function returns a sql.DB connection pool.
