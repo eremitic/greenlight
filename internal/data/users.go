@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var AnonymousUser = &User{}
+
 // Define a User struct to represent an individual user. Importantly, notice how we are
 // using the json:"-" struct tag to prevent the Password and Version fields appearing in
 // any output when we encode it to JSON. Also notice that the Password field uses the
@@ -23,6 +25,10 @@ type User struct {
 	Password  password  `json:"-"`
 	Activated bool      `json:"activated"`
 	Version   int       `json:"-"`
+}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 // Create a custom password type which is a struct containing the plaintext and hashed
