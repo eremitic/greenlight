@@ -5,6 +5,7 @@ import (
 	"database/sql" // New import
 	"expvar"
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -21,6 +22,10 @@ import (
 )
 
 const version = "1.0.0"
+
+// Create a buildTime variable to hold the executable binary build time. Note that this
+// must be a string type, as the -X linker flag will only work with string variables.
+var buildTime string
 
 // Add a db struct field to hold the configuration settings for our database connection
 // pool. For now this only holds the DSN, which we will read in from a command-line flag.
@@ -95,7 +100,18 @@ func main() {
 		return nil
 	})
 
+	// Create a new version boolean flag with the default value of false.
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	// If the version flag value is true, then print out the version number and
+	// immediately exit.
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		fmt.Printf("Build time:\t%s\n", buildTime)
+		os.Exit(0)
+	}
 
 	// Initialize a new jsonlog.Logger which writes any messages *at or above* the INFO
 	// severity level to the standard out stream.
