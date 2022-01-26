@@ -1,0 +1,8 @@
+{
+  email eremitic.elvin@gmail.com
+}
+
+http://128.199.108.157 {
+  respond /debug/* "Not Permitted" 403
+  reverse_proxy localhost:4000
+}
